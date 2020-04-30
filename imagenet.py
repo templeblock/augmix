@@ -91,7 +91,7 @@ parser.add_argument(
     help='Severity of base augmentation operators')
 parser.add_argument(
     '--aug-prob-coeff',
-    default=0.1,
+    default=1.,
     type=float,
     help='Probability distribution coefficients')
 parser.add_argument(
@@ -99,6 +99,11 @@ parser.add_argument(
     '-nj',
     action='store_true',
     help='Turn off JSD consistency loss.')
+parser.add_argument(
+    '--all-ops',
+    '-all',
+    action='store_true',
+    help='Turn on all operations (+brightness,contrast,color,sharpness).')
 # Checkpointing options
 parser.add_argument(
     '--save',
@@ -199,6 +204,10 @@ def aug(image, preprocess):
   Returns:
     mixed: Augmented and mixed image.
   """
+  aug_list = augmentations.augmentations
+  if args.all_ops:
+    aug_list = augmentations.augmentations_all
+
   ws = np.float32(
       np.random.dirichlet([args.aug_prob_coeff] * args.mixture_width))
   m = np.float32(np.random.beta(args.aug_prob_coeff, args.aug_prob_coeff))
@@ -209,7 +218,7 @@ def aug(image, preprocess):
     depth = args.mixture_depth if args.mixture_depth > 0 else np.random.randint(
         1, 4)
     for _ in range(depth):
-      op = np.random.choice(augmentations.augmentations)
+      op = np.random.choice(aug_list)
       image_aug = op(image_aug, args.aug_severity)
     # Preprocessing commutes since all coefficients are convex
     mix += ws[i] * preprocess(image_aug)
